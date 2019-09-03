@@ -1,25 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--     
-	Copyright (C) 2018 MuK IT GmbH
-	
+<!--
+
+    Copyright (c) 2017-2019 MuK IT GmbH.
+
+    This file is part of MuK Backend Theme 
+    (see https://mukit.at).
+
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
--->
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+  -->
 
 <templates id="template" xml:space="preserve">
 	
 	<t t-extend="AppsMenu">
+		<t t-jquery=".o_app" t-operation="attributes">
+            <attribute name="t-attf-href">#menu_id=#{app.menuID}&amp;action_id=#{app.actionID}</attribute>
+        </t>
         <t t-jquery=".full" t-operation="attributes">
             <attribute name="accesskey">h</attribute>
         </t>
@@ -35,7 +43,7 @@
                                 <i class="fa fa-search"/>
                             </div>
                         </div>
-                        <input type="search" placeholder="Search menus..." class="form-control"/>
+                        <input type="text" placeholder="Search menus..." class="form-control"/>
                     </div>
                 </div>
                 <div class="mk_search_results col-md-10 ml-auto mr-auto"/>
@@ -56,8 +64,9 @@
     <t t-name="muk_web_theme.MenuSearchResults">
         <t t-foreach="results" t-as="result">
             <t t-set="menu" t-value="widget._menuInfo(result.original)"/>
-            <div t-attf-class="mk_menu_search_result dropdown-item col-12 ml-auto mr-auto #{result_first ? 'active' : ''}"
-                 t-attf-style="background-image:url('data:image/png;base64,#{menu.web_icon_data}')"
+            <a t-attf-class="mk_menu_search_result dropdown-item col-12 ml-auto mr-auto #{result_first ? 'active' : ''}"
+                 t-attf-style="background-image: #{menu.web_icon_data ? 'url(data:image/png;base64,' + menu.web_icon_data + ')' : 'none'}"
+                 t-attf-href="#menu_id=#{menu.id}&amp;action_id=#{menu.action_id}"
                  t-att-data-menu-id="menu.id"
                  t-att-data-action-id="menu.action_id"
                  t-att-data-parent-id="menu.parent_id[0]"

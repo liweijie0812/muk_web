@@ -1,6 +1,9 @@
 ###################################################################################
 #
-#    Copyright (C) 2018 MuK IT GmbH
+#    Copyright (c) 2017-2019 MuK IT GmbH.
+#
+#    This file is part of MuK Web Refresh 
+#    (see https://mukit.at).
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as
@@ -13,7 +16,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 ###################################################################################
 
@@ -35,7 +38,7 @@ class BaseAutomation(models.Model):
     def create_refresh_rules(self, model_name):
         model = self.env['ir.model'].search(
             [('model', '=', model_name)], limit=1)
-        if model_name in self.env and model.exists():
+        if model_name in self.env and model:
             triggers = [
                 ('on_create', 'Creation'),
                 ('on_write', 'Update'),
@@ -46,7 +49,7 @@ class BaseAutomation(models.Model):
                     ('model_id', '=', model.id),
                     ('trigger', '=', trigger[0])
                 ], limit=1)
-                if refresh_rules.exists():
+                if len(refresh_rules) > 0:
                     refresh_rules.write({
                         'active': True
                     })

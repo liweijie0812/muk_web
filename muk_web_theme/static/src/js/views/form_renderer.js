@@ -1,19 +1,22 @@
 /**********************************************************************************
-* 
-*    Copyright (C) 2017 MuK IT GmbH
+*
+*    Copyright (c) 2017-2019 MuK IT GmbH.
+*
+*    This file is part of MuK Backend Theme 
+*    (see https://mukit.at).
 *
 *    This program is free software: you can redistribute it and/or modify
-*    it under the terms of the GNU Affero General Public License as
-*    published by the Free Software Foundation, either version 3 of the
-*    License, or (at your option) any later version.
+*    it under the terms of the GNU Lesser General Public License as published by
+*    the Free Software Foundation, either version 3 of the License, or
+*    (at your option) any later version.
 *
 *    This program is distributed in the hope that it will be useful,
 *    but WITHOUT ANY WARRANTY; without even the implied warranty of
 *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU Affero General Public License for more details.
+*    GNU Lesser General Public License for more details.
 *
-*    You should have received a copy of the GNU Affero General Public License
-*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*    You should have received a copy of the GNU Lesser General Public License
+*    along with this program. If not, see <http://www.gnu.org/licenses/>.
 *
 **********************************************************************************/
 
@@ -32,17 +35,13 @@ var QWeb = core.qweb;
 FormRenderer.include({
 	_renderHeaderButtons: function () {
         var $buttons = this._super.apply(this, arguments);
-        if (config.device.isMobile) {
+        if (config.device.isMobile && this.state.model !== "res.config.settings") {
             var $dropdown = $(QWeb.render('muk_web_theme.MenuStatusbarButtons'));
             $buttons.addClass("dropdown-menu").appendTo($dropdown);
-            $buttons.addClass("dropdown-menu");
+            $buttons.children().addClass("dropdown-item");
             return $dropdown;
         }
         return $buttons;
-    },
-    _updateView: function () {
-    	this._super.apply(this, arguments);
-    	this.$('.nav-tabs').scrollingTabs();
     },
 });
 

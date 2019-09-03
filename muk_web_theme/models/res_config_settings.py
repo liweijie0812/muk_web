@@ -1,19 +1,22 @@
 ###################################################################################
 #
-#    Copyright (C) 2017 MuK IT GmbH
+#    Copyright (c) 2017-2019 MuK IT GmbH.
+#
+#    This file is part of MuK Backend Theme 
+#    (see https://mukit.at).
 #
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#    it under the terms of the GNU Lesser General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
 #
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#    GNU Lesser General Public License for more details.
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU Lesser General Public License
+#    along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 ###################################################################################
 
@@ -26,108 +29,127 @@ from odoo import api, fields, models
 XML_ID = "muk_web_theme._assets_primary_variables"
 SCSS_URL = "/muk_web_theme/static/src/scss/colors.scss"
 
-TEMPLATE = """
-    $o-brand-odoo: {0};
-    $o-brand-primary: {1};
-    
-    $mk-brand-gradient-start: lighten($o-brand-odoo, 10%);
-    $mk-brand-gradient-end: lighten($o-brand-odoo, 20%);
-"""
-
 class ResConfigSettings(models.TransientModel):
 
     _inherit = 'res.config.settings'
 
+    #----------------------------------------------------------
+    # Database
+    #----------------------------------------------------------
+    
+    module_muk_web_theme_mail = fields.Boolean(
+        string="Theme Mail",
+        help="Optimizes the mail chatter for the theme.")
+    
+    module_muk_web_theme_branding = fields.Boolean(
+        string="Theme Branding",
+        help="Customize the theme according to your needs.")
+    
+    module_muk_web_theme_website = fields.Boolean(
+        string="Theme Website",
+        help="Add theme styled website navigation.")
+    
+    module_muk_web_theme_mobile = fields.Boolean(
+        string="Theme Mobile",
+        help="Allow Odoo to be used as a PWA app.")
+    
     theme_background_image = fields.Binary(
         related="company_id.background_image",
-        readonly=False,
-        required=True)
+        readonly=False)
+    
+    theme_background_blend_mode = fields.Selection(
+        related="company_id.background_blend_mode",
+        readonly=False)
+    
+    theme_default_sidebar_preference = fields.Selection(
+        related="company_id.default_sidebar_preference",
+        readonly=False)
+
+    theme_default_chatter_preference = fields.Selection(
+        related="company_id.default_chatter_preference",
+        readonly=False)
     
     theme_color_brand = fields.Char(
-        string="Brand Color")
+        string="Theme Brand Color")
     
     theme_color_primary = fields.Char(
-        string="Primary Color")
+        string="Theme Primary Color")
+    
+    theme_color_required = fields.Char(
+        string="Theme Required Color")
+    
+    theme_color_menu = fields.Char(
+        string="Theme Menu Color")
+    
+    theme_color_appbar_color = fields.Char(
+        string="Theme AppBar Color")
+    
+    theme_color_appbar_background = fields.Char(
+        string="Theme AppBar Background")
+    
+    #----------------------------------------------------------
+    # Functions
+    #----------------------------------------------------------
     
     @api.multi 
     def set_values(self):
         res = super(ResConfigSettings, self).set_values()
-        self._save_scss_values()
+        param = self.env['ir.config_parameter'].sudo()
+        variables = [
+            'o-brand-odoo',
+            'o-brand-primary',
+            'mk-required-color',
+            'mk-apps-color',
+            'mk-appbar-color',
+            'mk-appbar-background',
+        ]
+        colors = self.env['muk_utils.scss_editor'].get_values(
+            SCSS_URL, XML_ID, variables
+        )
+        colors_changed = []
+        colors_changed.append(self.theme_color_brand != colors['o-brand-odoo'])
+        colors_changed.append(self.theme_color_primary != colors['o-brand-primary'])
+        colors_changed.append(self.theme_color_required != colors['mk-required-color'])
+        colors_changed.append(self.theme_color_menu != colors['mk-apps-color'])
+        colors_changed.append(self.theme_color_appbar_color != colors['mk-appbar-color'])
+        colors_changed.append(self.theme_color_appbar_background != colors['mk-appbar-background'])
+        if(any(colors_changed)):
+            variables = [
+                {'name': 'o-brand-odoo', 'value': self.theme_color_brand or "#243742"},
+                {'name': 'o-brand-primary', 'value': self.theme_color_primary or "#5D8DA8"},
+                {'name': 'mk-required-color', 'value': self.theme_color_required or "#d1dfe6"},
+                {'name': 'mk-apps-color', 'value': self.theme_color_menu or "#f8f9fa"},
+                {'name': 'mk-appbar-color', 'value': self.theme_color_appbar_color or "#dee2e6"},
+                {'name': 'mk-appbar-background', 'value': self.theme_color_appbar_background or "#000000"},
+            ]
+            self.env['muk_utils.scss_editor'].replace_values(
+                SCSS_URL, XML_ID, variables
+            )
+        param.set_param('muk_web_theme.background_blend_mode', self.theme_background_blend_mode)
         return res
 
     @api.model
     def get_values(self):
         res = super(ResConfigSettings, self).get_values()
-        res.update(self._get_scss_values())
-        return res
-    
-    def _get_custom_scss_url(self, url, xmlid):
-        return self._build_custom_scss_url(url.rsplit(".", 1), xmlid)
-    
-    def _build_custom_scss_url(self, url_parts, xmlid):
-        return "%s.custom.%s.%s" % (url_parts[0], xmlid, url_parts[1])
-    
-    def _get_custom_attachment(self, url):
-        return self.env["ir.attachment"].search([("url", '=', url)])
-    
-    def _get_scss_values(self):
-        custom_url = self._get_custom_scss_url(SCSS_URL, XML_ID)
-        custom_attachment = self._get_custom_attachment(custom_url)
-        if custom_attachment.exists():
-            content = str(base64.b64decode(custom_attachment.datas))
-            brand = re.search( r'o-brand-odoo\:?\s(.*?);', content)
-            primary = re.search( r'o-brand-primary\:?\s(.*?);', content)
-            return {
-                'theme_color_brand': brand and brand.group(1) or "#243742",
-                'theme_color_primary': primary and primary.group(1) or "#5D8DA8",
-            }
-        else:
-            return {
-                'theme_color_brand': "#243742",
-                'theme_color_primary': "#5D8DA8",
-            }
-    
-    def _build_custom_scss_template(self):
-        return TEMPLATE.format(
-            self.theme_color_brand or "#243742",
-            self.theme_color_primary or "#5D8DA8"
+        params = self.env['ir.config_parameter'].sudo()
+        variables = [
+            'o-brand-odoo',
+            'o-brand-primary',
+            'mk-required-color',
+            'mk-apps-color',
+            'mk-appbar-color',
+            'mk-appbar-background',
+        ]
+        colors = self.env['muk_utils.scss_editor'].get_values(
+            SCSS_URL, XML_ID, variables
         )
-    
-    def _save_scss_values(self):
-        custom_url = self._get_custom_scss_url(SCSS_URL, XML_ID)
-        custom_attachment = self._get_custom_attachment(custom_url)
-        custom_content = self._build_custom_scss_template()
-        datas = base64.b64encode((custom_content).encode("utf-8"))
-        if custom_attachment:
-            custom_attachment.write({"datas": datas})
-        else:
-            self.env["ir.attachment"].create({
-                'name': custom_url,
-                'type': "binary",
-                'mimetype': "text/scss",
-                'datas': datas,
-                'datas_fname': SCSS_URL.split("/")[-1],
-                'url': custom_url,
-            })
-            view_to_xpath = self.env["ir.ui.view"].get_related_views(
-                XML_ID, bundles=True
-            ).filtered(lambda v: v.arch.find(url) >= 0)
-            self.env["ir.ui.view"].create({
-                'name': custom_url,
-                'key': 'web_editor.scss_%s' % str(uuid.uuid4())[:6],
-                'mode': "extension",
-                'inherit_id': view_to_xpath.id,
-                'arch': """
-                    <data inherit_id="%(inherit_xml_id)s" name="%(name)s">
-                        <xpath expr="//link[@href='%(url_to_replace)s']" position="attributes">
-                            <attribute name="href">%(new_url)s</attribute>
-                        </xpath>
-                    </data>
-                """ % {
-                    'inherit_xml_id': view_to_xpath.xml_id,
-                    'name': custom_url,
-                    'url_to_replace': url,
-                    'new_url': custom_url,
-                }
-            })
-        self.env["ir.qweb"].clear_caches()
+        res.update({
+            'theme_color_brand': colors['o-brand-odoo'],
+            'theme_color_primary': colors['o-brand-primary'],
+            'theme_color_required': colors['mk-required-color'],
+            'theme_color_menu': colors['mk-apps-color'],
+            'theme_color_appbar_color': colors['mk-appbar-color'],
+            'theme_color_appbar_background': colors['mk-appbar-background'],
+            'theme_background_blend_mode': params.get_param('muk_web_theme.background_blend_mode', 'normal'),
+        })
+        return res

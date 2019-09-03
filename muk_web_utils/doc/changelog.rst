@@ -1,3 +1,23 @@
+`2.9.0`
+-------
+
+- Temporary attachments
+
+`2.8.0`
+-------
+
+- Added path field widgets
+
+`2.7.0`
+-------
+
+- Added color index field widget
+
+`2.6.0`
+-------
+
+- Moved editor features to separate module
+
 `2.5.0`
 -------
 
